@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <package >
   <metadata>
-    <id>VPaged.WF.csproj</id>
+    <id>VPaged.WF</id>
     <version>1.0.0</version>
     <authors>LeviTran</authors>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
