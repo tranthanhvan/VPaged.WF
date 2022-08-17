@@ -19,6 +19,23 @@ namespace VPaged.WF
         private List<VButton> _Buttons { get; set; }
         private Func<Task> _SelectDataMaster { get; set; }
         private ButtonStyle _ButtonStyle { get; set; }
+        private Control _ContainerPagination { get; set; }
+        private bool _StartWhenIntialize { get; set; }
+
+        /// <summary>
+        /// Function handler data
+        /// </summary>
+        public bool StartWhenIntialize
+        {
+            get
+            {
+                return _StartWhenIntialize;
+            }
+            set
+            {
+                _StartWhenIntialize = value;
+            }
+        }
 
         /// <summary>
         /// button style
@@ -76,8 +93,9 @@ namespace VPaged.WF
             }
         }
 
-        public VPagination(TForm form, int pageIndex = 1, int pageSize = 15, Func<Task> handlerData = null, ButtonStyle style = null)
+        public VPagination(TForm form, int pageIndex = 1, int pageSize = 15, Func<Task> handlerData = null, ButtonStyle style = null,bool startWhenIntialize = false)
         {
+            _StartWhenIntialize = startWhenIntialize;
             _ButtonStyle = style ?? new ButtonStyle();
             this.InitializeComponent();
             _PageIndex = pageIndex;
@@ -126,8 +144,21 @@ namespace VPaged.WF
             this.btnPage3.Click -= new EventHandler(this.btnPage3_Click);
             this.btnPage3.Click += new EventHandler(this.btnPage3_Click);
 
-            _instanceImplement.Load += new EventHandler(this.Form1_Load);
-            _instanceImplement.Load += new EventHandler(this.Form1_Load);
+            _instanceImplement.Load -= new EventHandler(this.FormImplement_Load);
+            _instanceImplement.Load += new EventHandler(this.FormImplement_Load);
+        }
+
+        /// <summary>
+        /// Run pagination when implement use startWhenIntialize is false or refresh data paging
+        /// </summary>
+        public async void VPagRunOrRefresh()
+        {
+            await _SelectDataMaster();
+            Button activeButton = _Buttons.Where(c => c.Text.Equals(_PageIndex.ToString())).FirstOrDefault();
+            if (activeButton == null)
+                HandlerPage(btnPage1);
+            else
+                HandlerPage(activeButton);
         }
 
         /// <summary>
@@ -147,6 +178,7 @@ namespace VPaged.WF
             //Set globals Total page
             _TotalPage = pagination.TotalPage;
             numericPage.Maximum = (decimal)_TotalPage;
+            DisplayPaginationContainer();
         }
 
         /// <summary>
@@ -166,6 +198,7 @@ namespace VPaged.WF
                 dataGridview.DataSource = datas.Select(selector).ToList();
                 _TotalPage = totalPage;
                 numericPage.Maximum = (decimal)_TotalPage;
+                DisplayPaginationContainer();
             }
             catch (Exception ex)
             {
@@ -195,6 +228,7 @@ namespace VPaged.WF
 
                 _TotalPage = paging;
                 numericPage.Maximum = (decimal)_TotalPage;
+                DisplayPaginationContainer();
             }
             catch (Exception ex)
             {
@@ -230,8 +264,12 @@ namespace VPaged.WF
 
         private void HandlerPage(Button btnClick)
         {
+            if (_TotalPage == 0)
+                return;
             //Rewrite
             _PageIndex = int.Parse(btnClick.Text);
+            if (_PageIndex > _TotalPage)
+                _PageIndex = (int)_TotalPage;
             double centerPage = _PageIndex;
             double rangeMinNew = centerPage - 2;
             double rangeMaxNew = centerPage + 2;
@@ -265,12 +303,14 @@ namespace VPaged.WF
             if (activeButton != null)
             {
                 activeButton.BackColor = ButtonStyle.ColorActive;
+                activeButton.Enabled = false;
             }
 
             Button itemUnActiveFront = _Buttons.Where(c => !c.Text.Equals(_PageIndex.ToString()) && c.BackColor == ButtonStyle.ColorActive).FirstOrDefault();
             if (itemUnActiveFront != null)
             {
                 itemUnActiveFront.BackColor = ButtonStyle.BackColor;
+                itemUnActiveFront.Enabled = true;
             }
 
             //Filter display
@@ -368,10 +408,16 @@ namespace VPaged.WF
             HandlerPage(btnPage5);
         }
 
-        private void Form1_Load(object sender, EventArgs e)
+        private async void FormImplement_Load(object sender, EventArgs e)
         {
             numericPage.Minimum = 1;
-            HandlerPage(btnPage1);
+            if (_StartWhenIntialize)
+            {
+                await _SelectDataMaster();
+                HandlerPage(btnPage1);
+            }
+            else
+                _ContainerPagination.Visible = false;
         }
 
         private void btnGoPage_Click(object sender, EventArgs e)
@@ -489,8 +535,11 @@ namespace VPaged.WF
         /// Display pagition in screen
         /// </summary>
         /// <param name="container">Group box</param>
-        public void GetPaginationUI(System.Windows.Forms.GroupBox container)
+        public void GetPaginationUI(Control container)
         {
+            if (_ContainerPagination != null)
+                return;
+
             if (container.Height < 48)
                 container.Height = 48;
             if (container.Width < 370)
@@ -507,6 +556,15 @@ namespace VPaged.WF
             fitControlsToScreen(container);
             container.SuspendLayout();
             container.ResumeLayout(false);
+            _ContainerPagination = container;
+        }
+
+        private void DisplayPaginationContainer()
+        {
+            if (_TotalPage <= 1)
+                _ContainerPagination.Visible = false;
+            else
+                _ContainerPagination.Visible = true;
         }
 
         private void fitControlsToScreen(Control container)

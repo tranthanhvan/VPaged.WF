@@ -15,7 +15,6 @@
     <tags>paging page pager winform</tags>
     <dependencies>
       <group targetFramework=".NETFramework4.7.2">
-        <dependency id="System.Windows.Forms" version="4.0.0.0" />
       </group>
     </dependencies>
   </metadata>
