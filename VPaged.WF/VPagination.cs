@@ -187,15 +187,13 @@ namespace VPaged.WF
         /// <typeparam name="TData"></typeparam>
         /// <typeparam name="TRequest"></typeparam>
         /// <param name="datas">Datas</param>
-        /// <param name="selector">Select display property</param>
-        /// <param name="dataGridview">Datagridview reference</param>
         /// <param name="totalPage">Total page</param>
-        public void Pagination<TData>(IEnumerable<TData> datas,
-            Func<TData, object> selector, ref DataGridView dataGridview, double totalPage)
+        /// <param name="dataGridview">Datagridview reference</param>
+        public void Pagination<TData>(IEnumerable<TData> datas, double totalPage, ref DataGridView dataGridview)
         {
             try
             {
-                dataGridview.DataSource = datas.Select(selector).ToList();
+                dataGridview.DataSource = datas;
                 _TotalPage = totalPage;
                 numericPage.Maximum = (decimal)_TotalPage;
                 DisplayPaginationContainer();
@@ -211,19 +209,16 @@ namespace VPaged.WF
         /// </summary>
         /// <typeparam name="TData"></typeparam>
         /// <param name="datas"></param>
-        /// <param name="selector"></param>
         /// <param name="totalRecord"></param>
-        /// <param name="pageSize"></param>
         /// <param name="dataGridview"></param>
-        public void Pagination<TData>(IEnumerable<TData> datas,
-            Func<TData, object> selector, long totalRecord, int pageSize, ref DataGridView dataGridview)
+        public void Pagination<TData>(IEnumerable<TData> datas,long totalRecord, ref DataGridView dataGridview)
         {
             try
             {
-                dataGridview.DataSource = datas.Select(selector).ToList();
+                dataGridview.DataSource = datas;
 
-                double paging = Convert.ToDouble(totalRecord / pageSize);
-                paging = (totalRecord % pageSize == 0 ? paging : paging + 1);
+                double paging = Convert.ToDouble(totalRecord / _PageSize);
+                paging = (totalRecord % _PageSize == 0 ? paging : paging + 1);
                 paging = Math.Round(paging, MidpointRounding.AwayFromZero);
 
                 _TotalPage = paging;
