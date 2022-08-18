@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package >
+  <metadata>
+    <id>VPaged.WF</id>
+    <version>1.0.3</version>
+    <title>VPaged.WF</title>
+    <authors>LeviTran</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <!-- <icon>icon.png</icon> -->
+    <projectUrl>https://github.com/tranthanhvan/VPaged.WF.Example</projectUrl>
+    <description>Library to help you paginate easily with Winform application</description>
+    <releaseNotes>Pagination for winform</releaseNotes>
+    <copyright>$copyright$</copyright>
+    <tags>paging page pager winform</tags>
+    <dependencies>
+      <group targetFramework=".NETFramework4.7.2">
+      </group>
+    </dependencies>
+  </metadata>
+</package>
