@@ -167,14 +167,13 @@ namespace VPaged.WF
         /// <typeparam name="TData">TData ensure have Total property</typeparam>
         /// <typeparam name="TRequest"></typeparam>
         /// <param name="datas">Datas</param>
-        /// <param name="request">Request pagination.Contains pageIndex & pageSize</param>
         /// <param name="selector">Select display property</param>
         /// <param name="dataGridview">Datagridview reference</param>
-        public void Pagination<TData, TRequest>(IEnumerable<TData> datas, TRequest request,
-            Func<TData, object> selector, ref DataGridView dataGridview) where TRequest : IVPaginationRequest where TData : class, ITotalModel
+        public void Pagination<TData, TRequest>(IEnumerable<TData> datas,
+            Func<TData, object> selector, ref DataGridView dataGridview) where TData : class, ITotalModel
         {
             dataGridview.DataSource = datas.Select(selector).ToList();
-            PropertiesPagination pagination = this.PaginationGeneric<TData>(datas, request);
+            PropertiesPagination pagination = this.PaginationGeneric<TData>(datas);
             //Set globals Total page
             _TotalPage = pagination.TotalPage;
             numericPage.Maximum = (decimal)_TotalPage;
@@ -231,7 +230,7 @@ namespace VPaged.WF
             }
         }
 
-        private PropertiesPagination PaginationGeneric<T>(IEnumerable<T> data, IVPaginationRequest request) where T : class, ITotalModel
+        private PropertiesPagination PaginationGeneric<T>(IEnumerable<T> data) where T : class, ITotalModel
         {
             if (data == null || !data.Any())
             {
@@ -245,13 +244,13 @@ namespace VPaged.WF
             {
                 long Total = data.FirstOrDefault().Total;
                 //paging
-                var paging = Convert.ToDouble(Total / request.pageSize);
-                paging = (Total % request.pageSize == 0 ? paging : paging + 1);
+                var paging = Convert.ToDouble(Total / _PageSize);
+                paging = (Total % _PageSize == 0 ? paging : paging + 1);
 
                 paging = Math.Round(paging, MidpointRounding.AwayFromZero);
                 return new PropertiesPagination
                 {
-                    PageIndex = request.pageIndex,
+                    PageIndex = _PageIndex,
                     TotalPage = paging
                 };
             }
