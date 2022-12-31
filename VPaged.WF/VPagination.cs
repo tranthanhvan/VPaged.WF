@@ -165,11 +165,10 @@ namespace VPaged.WF
         /// Pagination with TotalRecord use like column in collection
         /// </summary>
         /// <typeparam name="TData">TData ensure have Total property</typeparam>
-        /// <typeparam name="TRequest"></typeparam>
         /// <param name="datas">Datas</param>
         /// <param name="selector">Select display property</param>
         /// <param name="dataGridview">Datagridview reference</param>
-        public void Pagination<TData, TRequest>(IEnumerable<TData> datas,
+        public void Pagination<TData>(IEnumerable<TData> datas,
             Func<TData, object> selector, ref DataGridView dataGridview) where TData : class, ITotalModel
         {
             dataGridview.DataSource = datas.Select(selector).ToList();
