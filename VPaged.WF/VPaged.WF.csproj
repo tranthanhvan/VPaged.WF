@@ -50,9 +50,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Interfaces\ISelectorPagination.cs" />
-    <Compile Include="Interfaces\ITotalModel.cs" />
-    <Compile Include="Interfaces\IVPaginationRequest.cs" />
     <Compile Include="VComponents\VButton.cs">
       <SubType>Component</SubType>
     </Compile>

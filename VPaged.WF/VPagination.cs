@@ -1,41 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using VPaged.WF.Interfaces;
 using VPaged.WF.VComponents;
 using VPaged.WF.VProperties;
 
 namespace VPaged.WF
 {
-    public class VPagination<TForm> where TForm : Form
+    public class VPagination
     {
-        private TForm _instanceImplement;
         private int _PageIndex { get; set; }
-        private int _PageSize { get; set; }
-        private double _TotalPage { get; set; }
-        private List<VButton> _Buttons { get; set; }
-        private Func<Task> _SelectDataMaster { get; set; }
-        private ButtonStyle _ButtonStyle { get; set; }
-        private Control _ContainerPagination { get; set; }
-        private bool _StartWhenIntialize { get; set; }
 
-        /// <summary>
-        /// Function handler data
-        /// </summary>
-        public bool StartWhenIntialize
-        {
-            get
-            {
-                return _StartWhenIntialize;
-            }
-            set
-            {
-                _StartWhenIntialize = value;
-            }
-        }
+        private int _PageSize { get; set; }
+
+        private double _TotalPage { get; set; }
+
+        private List<VButton> _Buttons { get; set; }
+
+        private Action _SelectDataMaster { get; set; }
+
+        private Func<long> _SelectCountMaster { get; set; }
+
+        private ButtonStyle _ButtonStyle { get; set; }
+
+        private Control _ContainerPagination { get; set; }
 
         /// <summary>
         /// button style
@@ -51,7 +41,7 @@ namespace VPaged.WF
         /// <summary>
         /// Function handler data
         /// </summary>
-        public Func<Task> SelectDataMaster
+        public Action SelectDataMaster
         {
             get
             {
@@ -62,6 +52,22 @@ namespace VPaged.WF
                 _SelectDataMaster = value;
             }
         }
+
+        /// <summary>
+        /// Function get count
+        /// </summary>
+        public Func<long> SelectCountMaster
+        {
+            get
+            {
+                return _SelectCountMaster;
+            }
+            set
+            {
+                _SelectCountMaster = value;
+            }
+        }
+
 
         /// <summary>
         /// Current page
@@ -93,14 +99,28 @@ namespace VPaged.WF
             }
         }
 
-        public VPagination(TForm form, int pageIndex = 1, int pageSize = 15, Func<Task> handlerData = null, ButtonStyle style = null,bool startWhenIntialize = false)
+        public double TotalPage
         {
-            _StartWhenIntialize = startWhenIntialize;
+            get => _TotalPage;
+        }
+
+        /// <summary>
+        /// Initializer VPag
+        /// </summary>
+        /// <param name="containerDisplay"></param>
+        /// <param name="pageIndex"></param>
+        /// <param name="pageSize"></param>
+        /// <param name="selectDataMethod">Method set data</param>
+        /// <param name="selectCountMethod">Method get count record to paging</param>
+        /// <param name="style">btn style define</param>
+        public VPagination(Control containerDisplay, int pageIndex = 1, int pageSize = 15, Action selectDataMethod = null, Func<long> selectCountMethod = null, ButtonStyle style = null)
+        {
             _ButtonStyle = style ?? new ButtonStyle();
             this.InitializeComponent();
             _PageIndex = pageIndex;
             _PageSize = pageSize;
-            _SelectDataMaster = handlerData;
+            _SelectDataMaster = selectDataMethod;
+            _SelectCountMaster = selectCountMethod;
             _Buttons = new List<VButton>()
             {
                 this.btnPage1,
@@ -109,7 +129,9 @@ namespace VPaged.WF
                 this.btnPage4,
                 this.btnPage5
             };
-            _instanceImplement = form;
+            numericPage.Minimum = 1;
+            SetPaginationUI(containerDisplay);
+            DisplayPaginationContainer();
             this.InitializerEventHandler();
         }
 
@@ -143,17 +165,36 @@ namespace VPaged.WF
 
             this.btnPage3.Click -= new EventHandler(this.btnPage3_Click);
             this.btnPage3.Click += new EventHandler(this.btnPage3_Click);
-
-            _instanceImplement.Load -= new EventHandler(this.FormImplement_Load);
-            _instanceImplement.Load += new EventHandler(this.FormImplement_Load);
         }
+
+
+        /// <summary>
+        /// this to help VPaged get the latest TotalPage .
+        /// Limiting the second SelectMaster callback. it will calcuation & set totalPage based totalRecord
+        /// </summary>
+        /// <param name="totalRecord">total record need paging</param>
+        private void SetTotalPage(long totalRecord)
+        {
+            if (totalRecord < 0)
+                _TotalPage = 0;
+            else
+            {
+                double paging = Convert.ToDouble(totalRecord / _PageSize);
+                paging = (totalRecord % _PageSize == 0 ? paging : paging + 1);
+                paging = Math.Round(paging, MidpointRounding.AwayFromZero);
+                _TotalPage = paging;
+            }
+        } 
 
         /// <summary>
         /// Run pagination when implement use startWhenIntialize is false or refresh data paging
         /// </summary>
-        public async void VPagRunOrRefresh()
+        public void VPagRunOrRefresh()
         {
-            await _SelectDataMaster();
+            if(_SelectCountMaster is null)
+                throw new Exception("Select Count function master is not intializer");
+
+            SetTotalPage(_SelectCountMaster());
             Button activeButton = _Buttons.Where(c => c.Text.Equals(_PageIndex.ToString())).FirstOrDefault();
             if (activeButton == null)
                 HandlerPage(btnPage1);
@@ -162,64 +203,16 @@ namespace VPaged.WF
         }
 
         /// <summary>
-        /// Pagination with TotalRecord use like column in collection
-        /// </summary>
-        /// <typeparam name="TData">TData ensure have Total property</typeparam>
-        /// <param name="datas">Datas</param>
-        /// <param name="selector">Select display property</param>
-        /// <param name="dataGridview">Datagridview reference</param>
-        public void Pagination<TData>(IEnumerable<TData> datas,
-            Func<TData, object> selector, ref DataGridView dataGridview) where TData : class, ITotalModel
-        {
-            dataGridview.DataSource = datas.Select(selector).ToList();
-            PropertiesPagination pagination = this.PaginationGeneric<TData>(datas);
-            //Set globals Total page
-            _TotalPage = pagination.TotalPage;
-            numericPage.Maximum = (decimal)_TotalPage;
-            DisplayPaginationContainer();
-        }
-
-        /// <summary>
-        /// Pagination with TotalPage use like params
-        /// </summary>
-        /// <typeparam name="TData"></typeparam>
-        /// <typeparam name="TRequest"></typeparam>
-        /// <param name="datas">Datas</param>
-        /// <param name="totalPage">Total page</param>
-        /// <param name="dataGridview">Datagridview reference</param>
-        public void Pagination<TData>(IEnumerable<TData> datas, double totalPage, ref DataGridView dataGridview)
-        {
-            try
-            {
-                dataGridview.DataSource = datas;
-                _TotalPage = totalPage;
-                numericPage.Maximum = (decimal)_TotalPage;
-                DisplayPaginationContainer();
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
-
-        /// <summary>
-        /// Pagination
+        /// Use this method to display data paging
         /// </summary>
         /// <typeparam name="TData"></typeparam>
         /// <param name="datas"></param>
-        /// <param name="totalRecord"></param>
         /// <param name="dataGridview"></param>
-        public void Pagination<TData>(IEnumerable<TData> datas,long totalRecord, ref DataGridView dataGridview)
+        public void Pagination<TData>(IEnumerable<TData> datas, ref DataGridView dataGridview)
         {
             try
             {
                 dataGridview.DataSource = datas;
-
-                double paging = Convert.ToDouble(totalRecord / _PageSize);
-                paging = (totalRecord % _PageSize == 0 ? paging : paging + 1);
-                paging = Math.Round(paging, MidpointRounding.AwayFromZero);
-
-                _TotalPage = paging;
                 numericPage.Maximum = (decimal)_TotalPage;
                 DisplayPaginationContainer();
             }
@@ -229,29 +222,23 @@ namespace VPaged.WF
             }
         }
 
-        private PropertiesPagination PaginationGeneric<T>(IEnumerable<T> data) where T : class, ITotalModel
+        /// <summary>
+        /// Use this method to display data paging use DataTable
+        /// </summary>
+        /// <typeparam name="TData"></typeparam>
+        /// <param name="datas"></param>
+        /// <param name="dataGridview"></param>
+        public void Pagination(DataTable datas, ref DataGridView dataGridview)
         {
-            if (data == null || !data.Any())
+            try
             {
-                return new PropertiesPagination
-                {
-                    PageIndex = 0,
-                    TotalPage = 0
-                };
+                dataGridview.DataSource = datas;
+                numericPage.Maximum = (decimal)_TotalPage;
+                DisplayPaginationContainer();
             }
-            else
+            catch (Exception ex)
             {
-                long Total = data.FirstOrDefault().Total;
-                //paging
-                var paging = Convert.ToDouble(Total / _PageSize);
-                paging = (Total % _PageSize == 0 ? paging : paging + 1);
-
-                paging = Math.Round(paging, MidpointRounding.AwayFromZero);
-                return new PropertiesPagination
-                {
-                    PageIndex = _PageIndex,
-                    TotalPage = paging
-                };
+                throw ex;
             }
         }
 
@@ -353,7 +340,7 @@ namespace VPaged.WF
             }
 
             this.numericPage.Value = _PageIndex;
-            if (_instanceImplement != null && _SelectDataMaster != null)
+            if (_SelectDataMaster != null)
             {
                 _SelectDataMaster();
             }
@@ -399,18 +386,6 @@ namespace VPaged.WF
         {
             btnPage5.Text = _TotalPage.ToString();
             HandlerPage(btnPage5);
-        }
-
-        private async void FormImplement_Load(object sender, EventArgs e)
-        {
-            numericPage.Minimum = 1;
-            if (_StartWhenIntialize)
-            {
-                await _SelectDataMaster();
-                HandlerPage(btnPage1);
-            }
-            else
-                _ContainerPagination.Visible = false;
         }
 
         private void btnGoPage_Click(object sender, EventArgs e)
@@ -528,7 +503,7 @@ namespace VPaged.WF
         /// Display pagition in screen
         /// </summary>
         /// <param name="container">Group box</param>
-        public void GetPaginationUI(Control container)
+        private void SetPaginationUI(Control container)
         {
             if (_ContainerPagination != null)
                 return;
