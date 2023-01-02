@@ -107,7 +107,7 @@ namespace VPaged.WF
         /// <summary>
         /// Initializer VPag
         /// </summary>
-        /// <param name="containerDisplay"></param>
+        /// <param name="containerDisplay">container display paging. eg : System.Windows.Form.GroupBox</param>
         /// <param name="pageIndex"></param>
         /// <param name="pageSize"></param>
         /// <param name="selectDataMethod">Method set data</param>
@@ -187,7 +187,7 @@ namespace VPaged.WF
         } 
 
         /// <summary>
-        /// Run pagination when implement use startWhenIntialize is false or refresh data paging
+        /// Run or refresh data paging
         /// </summary>
         public void VPagRunOrRefresh()
         {
@@ -195,51 +195,18 @@ namespace VPaged.WF
                 throw new Exception("Select Count function master is not intializer");
 
             SetTotalPage(_SelectCountMaster());
+
+            numericPage.Maximum = (decimal)_TotalPage;
+            if (_TotalPage <= 1)
+                _ContainerPagination.Visible = false;
+            else
+                _ContainerPagination.Visible = true;
+
             Button activeButton = _Buttons.Where(c => c.Text.Equals(_PageIndex.ToString())).FirstOrDefault();
             if (activeButton == null)
                 HandlerPage(btnPage1);
             else
                 HandlerPage(activeButton);
-        }
-
-        /// <summary>
-        /// Use this method to display data paging
-        /// </summary>
-        /// <typeparam name="TData"></typeparam>
-        /// <param name="datas"></param>
-        /// <param name="dataGridview"></param>
-        public void Pagination<TData>(IEnumerable<TData> datas, ref DataGridView dataGridview)
-        {
-            try
-            {
-                dataGridview.DataSource = datas;
-                numericPage.Maximum = (decimal)_TotalPage;
-                DisplayPaginationContainer();
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
-
-        /// <summary>
-        /// Use this method to display data paging use DataTable
-        /// </summary>
-        /// <typeparam name="TData"></typeparam>
-        /// <param name="datas"></param>
-        /// <param name="dataGridview"></param>
-        public void Pagination(DataTable datas, ref DataGridView dataGridview)
-        {
-            try
-            {
-                dataGridview.DataSource = datas;
-                numericPage.Maximum = (decimal)_TotalPage;
-                DisplayPaginationContainer();
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
         }
 
         private void HandlerPage(Button btnClick)

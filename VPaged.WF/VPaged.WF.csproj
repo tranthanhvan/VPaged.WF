@@ -56,7 +56,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VPagination.cs" />
     <Compile Include="VProperties\ButtonStyle.cs" />
-    <Compile Include="VProperties\PropertiesPagination.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
